@@ -205,10 +205,61 @@ with st.form("add_payment", clear_on_submit=True):
             })
             st.success("Операция добавлена.")
 
+
 payments_df = pd.DataFrame(st.session_state.payments)
 
-st.subheader("Запланированные операции")
-st.dataframe(payments_df, use_container_width=True)
+st.subheader("Управление платежами")
+st.caption(
+    "Изменяйте даты, описания, типы и суммы. "
+    "Для удаления отметьте нужную строку."
+)
+
+payments_df["Удалить"] = False
+
+edited_df = st.data_editor(
+    payments_df,
+    use_container_width=True,
+    hide_index=True,
+    num_rows="fixed",
+    column_config={
+        "Дата": st.column_config.DateColumn(
+            "Дата",
+            format="DD.MM.YYYY",
+            required=True
+        ),
+        "Описание": st.column_config.TextColumn(
+            "Описание",
+            required=True
+        ),
+        "Тип": st.column_config.SelectboxColumn(
+            "Тип",
+            options=["Расход", "Поступление"],
+            required=True
+        ),
+        "Сумма": st.column_config.NumberColumn(
+            "Сумма, ₽",
+            min_value=0.01,
+            required=True
+        ),
+        "Удалить": st.column_config.CheckboxColumn(
+            "Удалить"
+        )
+    },
+    key="payment_editor"
+)
+
+if st.button("💾 Сохранить изменения"):
+    updated = edited_df[
+        ~edited_df["Удалить"]
+    ].drop(columns=["Удалить"])
+
+    st.session_state.payments = updated.to_dict(
+        orient="records"
+    )
+
+    st.success("Изменения сохранены.")
+    st.rerun()
+
 
 st.subheader("Прогноз остатка по дням")
 
