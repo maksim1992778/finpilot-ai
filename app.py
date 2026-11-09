@@ -137,3 +137,142 @@ st.caption(
     "Он не определяет даты возможных кассовых разрывов. "
     "AI-модуль будет добавлен позднее."
 )
+
+# ===== Календарь платежей v0.2 =====
+
+st.divider()
+st.header("📅 Календарь платежей")
+
+from datetime import date, timedelta
+
+today = date.today()
+
+if "payments" not in st.session_state:
+    st.session_state.payments = [
+        {
+            "Дата": today + timedelta(days=5),
+            "Описание": "Оплата поставщику",
+            "Тип": "Расход",
+            "Сумма": 350000.0
+        },
+        {
+            "Дата": today + timedelta(days=12),
+            "Описание": "Оплата от покупателя",
+            "Тип": "Поступление",
+            "Сумма": 600000.0
+        },
+        {
+            "Дата": today + timedelta(days=18),
+            "Описание": "Аренда и зарплата",
+            "Тип": "Расход",
+            "Сумма": 450000.0
+        }
+    ]
+
+with st.form("add_payment", clear_on_submit=True):
+    st.subheader("Добавить операцию")
+
+    payment_date = st.date_input(
+        "Дата операции",
+        value=today
+    )
+
+    description = st.text_input("Описание")
+    payment_type = st.selectbox(
+        "Тип операции",
+        ["Расход", "Поступление"]
+    )
+
+    amount = st.number_input(
+        "Сумма, ₽",
+        min_value=0.01,
+        value=10000.0
+    )
+
+    submitted = st.form_submit_button(
+        "Добавить в календарь"
+    )
+
+    if submitted:
+        if not description.strip():
+            st.error("Введите описание операции.")
+        else:
+            st.session_state.payments.append({
+                "Дата": payment_date,
+                "Описание": description.strip(),
+                "Тип": payment_type,
+                "Сумма": float(amount)
+            })
+            st.success("Операция добавлена.")
+
+payments_df = pd.DataFrame(st.session_state.payments)
+
+st.subheader("Запланированные операции")
+st.dataframe(payments_df, use_container_width=True)
+
+st.subheader("Прогноз остатка по дням")
+
+calendar = pd.DataFrame({
+    "Дата": [
+        today + timedelta(days=i)
+        for i in range(31)
+    ]
+})
+
+calendar["Остаток"] = float(opening_balance)
+
+for i in range(1, len(calendar)):
+    current_date = calendar.loc[i, "Дата"]
+
+    day_payments = payments_df[
+        payments_df["Дата"] == current_date
+    ]
+
+    incoming = day_payments.loc[
+        day_payments["Тип"] == "Поступление",
+        "Сумма"
+    ].sum()
+
+    outgoing = day_payments.loc[
+        day_payments["Тип"] == "Расход",
+        "Сумма"
+    ].sum()
+
+    calendar.loc[i, "Остаток"] = (
+        calendar.loc[i - 1, "Остаток"]
+        + incoming
+        - outgoing
+    )
+
+st.line_chart(
+    calendar.set_index("Дата")["Остаток"]
+)
+
+negative_days = calendar[
+    calendar["Остаток"] < 0
+]
+
+low_reserve_days = calendar[
+    calendar["Остаток"] < reserve
+]
+
+if not negative_days.empty:
+    first_day = negative_days.iloc[0]["Дата"]
+    st.error(
+        f"Кассовый разрыв: {first_day:%d.%m.%Y}"
+    )
+elif not low_reserve_days.empty:
+    first_day = low_reserve_days.iloc[0]["Дата"]
+    st.warning(
+        f"Остаток ниже резерва: {first_day:%d.%m.%Y}"
+    )
+else:
+    st.success(
+        "По календарю кассовых разрывов не обнаружено."
+    )
+
+st.caption(
+    "Календарь рассчитывается только по операциям "
+    "из таблицы выше. Общие суммы из предыдущего "
+    "прогноза автоматически не распределяются по дням."
+)
