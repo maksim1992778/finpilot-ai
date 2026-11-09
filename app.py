@@ -207,6 +207,10 @@ with st.form("add_payment", clear_on_submit=True):
 
 
 payments_df = pd.DataFrame(st.session_state.payments)
+if "Дата" not in payments_df.columns:
+    payments_df = pd.DataFrame(
+        columns=["Дата", "Описание", "Тип", "Сумма"]
+    )
 
 st.subheader("Управление платежами")
 st.caption(
