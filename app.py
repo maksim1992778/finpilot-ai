@@ -9,6 +9,92 @@ st.set_page_config(
     layout="wide"
 )
 
+# ===== FinPilot Design System v0.6 =====
+
+if "theme" not in st.session_state:
+    st.session_state.theme = "Светлая"
+
+theme = st.sidebar.radio(
+    "🎨 Тема оформления",
+    ["Светлая", "Тёмная"],
+    index=0 if st.session_state.theme == "Светлая" else 1
+)
+
+st.session_state.theme = theme
+
+if theme == "Тёмная":
+    bg = "#0B1020"
+    surface = "#151D30"
+    text = "#F4F7FC"
+    muted = "#9AA8C0"
+    border = "#29354C"
+    sidebar = "#10182A"
+else:
+    bg = "#F5F7FC"
+    surface = "#FFFFFF"
+    text = "#18243A"
+    muted = "#68788F"
+    border = "#E4EAF3"
+    sidebar = "#EAF0FA"
+
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background: {bg};
+        color: {text};
+    }}
+
+    [data-testid="stSidebar"] {{
+        background: {sidebar};
+    }}
+
+    h1, h2, h3 {{
+        color: {text} !important;
+        letter-spacing: -0.035em;
+        font-weight: 700;
+    }}
+
+    [data-testid="stMetric"] {{
+        background: {surface};
+        border: 1px solid {border};
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 6px 24px rgba(0,0,0,0.04);
+    }}
+
+    [data-testid="stMetricLabel"] {{
+        color: {muted};
+    }}
+
+    [data-testid="stMetricValue"] {{
+        color: {text};
+    }}
+
+    div.stButton > button[kind="primary"] {{
+        background: linear-gradient(
+            135deg, #476BFF, #8055F5
+        );
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+    }}
+
+    [data-testid="stDataFrame"] {{
+        border-radius: 14px;
+        overflow: hidden;
+    }}
+
+    [data-testid="stVerticalBlock"] {{
+        gap: 0.85rem;
+    }}
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.title("💰 ДеньгиПодКонтролем AI")
 st.caption("Финансовый аналитик для бизнеса | MVP 0.1")
 
