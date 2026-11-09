@@ -268,6 +268,68 @@ if st.button("💾 Сохранить изменения"):
 # ===== Экспорт платежного календаря =====
 import io
 
+# ===== Импорт платежного календаря v0.5 =====
+st.subheader("📤 Восстановление календаря")
+
+import_file = st.file_uploader(
+    "Выберите сохранённый календарь Excel",
+    type=["xlsx"],
+    key="payments_import"
+)
+
+if import_file is not None:
+    try:
+        imported = pd.read_excel(import_file)
+
+        required = ["Дата", "Описание", "Тип", "Сумма"]
+
+        if list(imported.columns) != required:
+            st.error(
+                "Неверный формат. Нужны столбцы: "
+                "Дата, Описание, Тип, Сумма."
+            )
+        else:
+            imported["Дата"] = pd.to_datetime(
+                imported["Дата"], errors="coerce"
+            ).dt.date
+
+            imported["Сумма"] = pd.to_numeric(
+                imported["Сумма"], errors="coerce"
+            )
+
+            valid = (
+                imported["Дата"].notna().all()
+                and imported["Описание"].notna().all()
+                and imported["Описание"].astype(str).str.strip().ne("").all()
+                and imported["Тип"].isin(
+                    ["Расход", "Поступление"]
+                ).all()
+                and imported["Сумма"].notna().all()
+                and imported["Сумма"].gt(0).all()
+            )
+
+            if not valid:
+                st.error(
+                    "В файле есть некорректные даты, "
+                    "типы операций или суммы."
+                )
+            else:
+                st.info(
+                    f"Найдено операций: {len(imported)}. "
+                    "При восстановлении текущий календарь "
+                    "будет заменён."
+                )
+
+                if st.button("✅ Восстановить календарь"):
+                    st.session_state.payments = (
+                        imported.to_dict(orient="records")
+                    )
+                    st.success("Календарь восстановлен.")
+                    st.rerun()
+
+    except Exception as e:
+        st.error(f"Ошибка загрузки Excel: {e}")
+
 st.subheader("📥 Сохранение календаря")
 
 export_df = pd.DataFrame(
