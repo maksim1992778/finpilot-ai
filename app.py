@@ -265,6 +265,38 @@ if st.button("💾 Сохранить изменения"):
     st.rerun()
 
 
+# ===== Экспорт платежного календаря =====
+import io
+
+st.subheader("📥 Сохранение календаря")
+
+export_df = pd.DataFrame(
+    st.session_state.payments,
+    columns=["Дата", "Описание", "Тип", "Сумма"]
+)
+
+output = io.BytesIO()
+
+with pd.ExcelWriter(
+    output,
+    engine="openpyxl"
+) as writer:
+    export_df.to_excel(
+        writer,
+        index=False,
+        sheet_name="Платежи"
+    )
+
+st.download_button(
+    label="📥 Скачать календарь Excel",
+    data=output.getvalue(),
+    file_name="finpilot_payments.xlsx",
+    mime=(
+        "application/vnd.openxmlformats-officedocument."
+        "spreadsheetml.sheet"
+    )
+)
+
 st.subheader("Прогноз остатка по дням")
 
 calendar = pd.DataFrame({
